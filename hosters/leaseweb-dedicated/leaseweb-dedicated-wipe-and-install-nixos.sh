@@ -64,6 +64,8 @@ ARRAY <ignore> UUID=00000000:00000000:00000000:00000000' > /etc/mdadm/mdadm.conf
 # Create partition tables (--script to not ask)
 parted --script /dev/sda mklabel gpt
 parted --script /dev/sdb mklabel gpt
+parted --script /dev/sdc mklabel gpt
+parted --script /dev/sdd mklabel gpt
 
 # Create partitions (--script to not ask)
 #
@@ -82,7 +84,8 @@ parted --script /dev/sdb mklabel gpt
 # GPT partition names are limited to 36 UTF-16 chars, see https://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_entries_(LBA_2-33).
 parted --script --align optimal /dev/sda -- mklabel gpt mkpart 'BIOS-boot-partition' 1MB 2MB set 1 bios_grub on mkpart 'data-partition' 2MB '100%'
 parted --script --align optimal /dev/sdb -- mklabel gpt mkpart 'BIOS-boot-partition' 1MB 2MB set 1 bios_grub on mkpart 'data-partition' 2MB '100%'
-
+parted --script --align optimal /dev/sdc -- mklabel gpt mkpart 'BIOS-boot-partition' 1MB 2MB set 1 bios_grub on mkpart 'data-partition' 2MB '100%'
+parted --script --align optimal /dev/sdd -- mklabel gpt mkpart 'BIOS-boot-partition' 1MB 2MB set 1 bios_grub on mkpart 'data-partition' 2MB '100%'
 # Relaod partitions
 partprobe
 
@@ -91,10 +94,15 @@ udevadm settle --timeout=5 --exit-if-exists=/dev/sda1
 udevadm settle --timeout=5 --exit-if-exists=/dev/sda2
 udevadm settle --timeout=5 --exit-if-exists=/dev/sdb1
 udevadm settle --timeout=5 --exit-if-exists=/dev/sdb2
-
+udevadm settle --timeout=5 --exit-if-exists=/dev/sdc1
+udevadm settle --timeout=5 --exit-if-exists=/dev/sdc2
+udevadm settle --timeout=5 --exit-if-exists=/dev/sdd1
+udevadm settle --timeout=5 --exit-if-exists=/dev/sdd2
 # Wipe any previous RAID signatures
 mdadm --zero-superblock --force /dev/sda2
 mdadm --zero-superblock --force /dev/sdb2
+mdadm --zero-superblock --force /dev/sdc2
+mdadm --zero-superblock --force /dev/sdd2
 
 # Create RAIDs
 # Note that during creating and boot-time assembly, mdadm cares about the
@@ -106,7 +114,7 @@ mdadm --zero-superblock --force /dev/sdb2
 # Almost all details of this are explained in
 #   https://bugzilla.redhat.com/show_bug.cgi?id=606481#c14
 # and the followup comments by Doug Ledford.
-mdadm --create --run --verbose /dev/md0 --level=1 --raid-devices=2 --homehost=leaseweb --name=root0 /dev/sda2 /dev/sdb2
+mdadm --create --run --verbose /dev/md0 --level=0 --raid-devices=4 --homehost=leaseweb --name=root0 /dev/sda2 /dev/sdb2 /dev/sdc2 /dev/sdd2
 
 # Assembling the RAID can result in auto-activation of previously-existing LVM
 # groups, preventing the RAID block device wiping below with
